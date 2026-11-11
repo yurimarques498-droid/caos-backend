@@ -20,7 +20,7 @@ if (!ATENAS_API_KEY) {
 }
 
 /* =========================================================
-   CATALOGO DE DEMONSTRACAO (server-side, dados ficticios)
+   CATALOGO (server-side)
    ========================================================= */
 const parsedSeed = Number(process.env.CARD_SEED);
 const SEED = Number.isFinite(parsedSeed) ? parsedSeed : 20261110;
@@ -85,7 +85,7 @@ const LAST = [
   'Souza', 'Pereira', 'Barbosa', 'Ribeiro', 'Cardoso', 'Moreira', 'Nogueira', 'Teixeira', 'Rocha', 'Carvalho'
 ];
 
-// Escada cota de demonstracao -> valor calculado no servidor
+// Escada cota -> valor calculado no servidor
 const LADDER = [
   { lim: 150, price: 40 },
   { lim: 180, price: 45 },
@@ -113,8 +113,8 @@ function genRefCode(length = REF_CODE_LENGTH) {
   return code;
 }
 
-// Gera bloco numerico ficticio nao financeiro (prefixo 0000 reservado/invalido)
-function genDemoDigits(len) {
+// Gera bloco numerico ficticio tarjado (prefixo 0000 reservado/invalido)
+function genDigits(len) {
   let out = '';
   for (let i = 0; i < len; i++) {
     out += String(Math.floor(R() * 10));
@@ -122,7 +122,7 @@ function genDemoDigits(len) {
   return out;
 }
 
-const CARDS = new Map(); // id -> item completo de demonstracao (server-side)
+const CARDS = new Map(); // id -> item completo (server-side)
 
 (function buildStock() {
   const brandKeys = Object.keys(BRANDS);
@@ -134,9 +134,8 @@ const CARDS = new Map(); // id -> item completo de demonstracao (server-side)
     const step = LADDER[i % LADDER.length];
     const limit = step.lim + between(0, 3) * 10;
     const id = 'VRT' + (seq++).toString(36).toUpperCase();
-    const g2 = genDemoDigits(4);
-    const g3 = genDemoDigits(4);
-    const tail = genDemoDigits(4);
+    const tail = genDigits(4);
+    const masked = `0000 •••• •••• ${tail}`;
     const refCode = genRefCode(REF_CODE_LENGTH);
     const trackingCode = `TRK-${genRefCode(REF_CODE_LENGTH)}`;
 
@@ -149,8 +148,9 @@ const CARDS = new Map(); // id -> item completo de demonstracao (server-side)
       c2: brand.c2,
       bank: pick(BANKS),
       holder: `${pick(FIRST)[0]}. ${pick(LAST)}`.toUpperCase(),
-      demoCode: `0000-${g2}-${g3}-${tail}`,
-      masked: `0000 •••• •••• ${tail}`,
+      code: masked,
+      masked,
+      exp: '••/••',
       refCode,
       trackingCode,
       limit,
@@ -173,6 +173,7 @@ function publicCard(c) {
     bank: c.bank,
     holder: c.holder,
     masked: c.masked,
+    exp: c.exp,
     refCode: c.refCode,
     trackingCode: c.trackingCode,
     limit: c.limit,
@@ -359,7 +360,9 @@ function entrega(order) {
       c1: c.c1,
       c2: c.c2,
       bank: c.bank,
-      demoCode: c.demoCode,
+      code: c.code,
+      masked: c.masked,
+      exp: c.exp,
       refCode: c.refCode,
       trackingCode: c.trackingCode,
       holder: c.holder,
