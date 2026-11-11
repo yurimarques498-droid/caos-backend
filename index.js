@@ -1,7 +1,7 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const crypto = require('crypto');
+Require('dotenv').config();
+Const express = require('express');
+Const cors = require('cors');
+Const crypto = require('crypto');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -20,7 +20,7 @@ if (!ATENAS_API_KEY) {
 }
 
 /* =========================================================
-   CATALOGO DE DEMONSTRACAO (server-side, dados ficticios)
+   CATALOGO DE DEMONSTRACAO (server-side, dados limpios)
    ========================================================= */
 const parsedSeed = Number(process.env.CARD_SEED);
 const SEED = Number.isFinite(parsedSeed) ? parsedSeed : 20261110;
@@ -34,13 +34,13 @@ const REF_CODE_LENGTH = Number.isFinite(parsedRefLen) && parsedRefLen >= 3 && pa
   : 6;
 
 function rng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a += 0x6D2B79F5;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  Let a = seed >>> 0;
+  Return () => {
+    A += 0x6D2B79F5;
+    Let t = a;
+    T = Math.imul(t ^ (t >>> 15), t | 1);
+    T ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    Return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
@@ -49,10 +49,10 @@ const pick = (arr) => arr[Math.floor(R() * arr.length)];
 const between = (min, max) => min + Math.floor(R() * (max - min + 1));
 
 const BRANDS = {
-  'Caos Alpha': { prefix: 'ALP' },
-  'Caos Beta': { prefix: 'BET' },
-  'Caos Gamma': { prefix: 'GAM' },
-  'Caos Delta': { prefix: 'DEL' }
+  Visa: { bins: ['423580', '434598', '436712', '401178'], len: 16 },
+  Mastercard: { bins: ['523496', '531209', '518842', '544178'], len: 16 },
+  Elo: { bins: ['636297', '650442', '636368'], len: 16 },
+  Amex: { bins: ['378282', '371449', '375987'], len: 15 }
 };
 
 const TIERS = [
@@ -64,29 +64,21 @@ const TIERS = [
 ];
 
 const BANKS = [
-  'Caos Lab',
-  'Nucleo Demo',
-  'Estudio Sandbox',
-  'Modulo Teste',
-  'Unidade Alpha',
-  'Unidade Beta'
+  'Neon', 'C6 Bank', 'BTG Pactual', 'Nubank', 'Inter', 'PicPay', 
+  'Sicredi', 'Itaú', 'Santander', 'Will Bank', 'Mercado Pago', 'Banco Original'
 ];
 
 const FIRST = [
-  'Lucas', 'Mariana', 'Pedro', 'Julia', 'Rafael', 'Amanda',
-  'Felipe', 'Gabriela', 'Thiago', 'Beatriz', 'Carlos', 'Larissa',
-  'Bruno', 'Camila', 'Diego', 'Fernanda', 'Gustavo', 'Isabela',
-  'Marcos', 'Patricia', 'Vinicius', 'Aline', 'Rodrigo', 'Natalia'
+  'Maria', 'João', 'Sebastião', 'Antônio', 'José', 'Francisca', 'Ana', 'Carlos', 'Francisco', 'Mariana',
+  'Pedro', 'Júlia', 'Rafael', 'Amanda', 'Felipe', 'Gabriela', 'Thiago', 'Beatriz', 'Larissa', 'Bruno',
+  'Camila', 'Diego', 'Fernanda', 'Gustavo', 'Isabela', 'Marcos', 'Patrícia', 'Vinícius', 'Aline', 'Rodrigo', 'Natália'
 ];
 
 const LAST = [
-  'Mendes', 'Silva', 'Augusto', 'Costa', 'Santos', 'Oliveira',
-  'Rodrigues', 'Ferreira', 'Almeida', 'Lima', 'Souza', 'Pereira',
-  'Barbosa', 'Ribeiro', 'Cardoso', 'Moreira', 'Nogueira', 'Teixeira',
-  'Rocha', 'Carvalho'
+  'Mendes', 'Silva', 'Augusto', 'Costa', 'Santos', 'Oliveira', 'Rodrigues', 'Ferreira', 'Almeida', 'Lima',
+  'Souza', 'Pereira', 'Barbosa', 'Ribeiro', 'Cardoso', 'Moreira', 'Nogueira', 'Teixeira', 'Rocha', 'Carvalho'
 ];
 
-// Escada cota de demonstracao -> valor calculado no servidor
 const LADDER = [
   { lim: 150, price: 40 },
   { lim: 180, price: 45 },
@@ -102,80 +94,98 @@ const LADDER = [
 
 const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-// Gera identificadores ficticios configuraveis (ex.: 3, 6 ou 12 caracteres)
 function genRefCode(length = REF_CODE_LENGTH) {
-  const safeLen = Number.isFinite(length) && length >= 3 && length <= 32
+  Const safeLen = Number.isFinite(length) && length >= 3 && length <= 32
     ? Math.floor(length)
     : REF_CODE_LENGTH;
-  let code = '';
-  for (let i = 0; i < safeLen; i++) {
-    code += REF_ALPHABET[Math.floor(R() * REF_ALPHABET.length)];
+  Let code = '';
+  For (let i = 0; i < safeLen; i++) {
+    Code += REF_ALPHABET[Math.floor(R() * REF_ALPHABET.length)];
   }
-  return code;
+  Return code;
 }
 
-const CARDS = new Map(); // id -> item completo de demonstracao (server-side)
+function luhn(s){ 
+  Let t = 0, alt = true; 
+  For(let i = s.length - 1; i >= 0; i--){ 
+    Let d = +s[i]; 
+    If(alt){ d *= 2; if(d > 9) d -= 9; } 
+    T += d; 
+    Alt = !alt; 
+  } 
+  Return (10 - (t % 10)) % 10; 
+}
+
+function genNum(bin, len){ 
+  Let b = bin; 
+  While(b.length < len - 1) b += Math.floor(R() * 10); 
+  Return b + luhn(b); 
+}
+
+const CARDS = new Map();
 
 (function buildStock() {
-  const brandKeys = Object.keys(BRANDS);
-  for (let i = 0; i < STOCK_SIZE; i++) {
-    const brandName = pick(brandKeys);
-    const brand = BRANDS[brandName];
-    const tier = TIERS[i % TIERS.length];
-    const step = LADDER[i % LADDER.length];
+  Const brandKeys = Object.keys(BRANDS);
+  Let seq = 1000;
+  For (let i = 0; i < STOCK_SIZE; i++) {
+    Const bn = pick(brandKeys);
+    Const b = BRANDS[bn];
+    Const tier = TIERS[i % TIERS.length];
+    Const step = LADDER[i % LADDER.length];
     const limit = step.lim + between(0, 3) * 10;
-    const id = 'CX' + String(1000 + i).padStart(4, '0');
-    const refCode = genRefCode(REF_CODE_LENGTH);
-    const trackingCode = `TRK-${brand.prefix}-${genRefCode(REF_CODE_LENGTH)}`;
-    const demoCode = `DEMO-${brand.prefix}-${id}-${refCode}`;
-
+    const full = genNum(pick(b.bins), b.len);
+    const id = 'VRT' + (seq++).toString(36).toUpperCase();
+    
     CARDS.set(id, {
-      id,
-      brand: brandName,
-      tier: tier.name,
-      tc: tier.tc,
-      bank: pick(BANKS),
-      holder: `${pick(FIRST)[0]}. ${pick(LAST)} (DEMO)`.toUpperCase(),
-      demoCode,
-      masked: `DEMO-${brand.prefix}-••••-${id}`,
-      refCode,
-      trackingCode,
-      limit,
-      price: step.price,
-      score: Math.round(R() * 1000),
-      sold: false
+      Id,
+      Brand: bn,
+      Tier: tier.name,
+      Tc: tier.tc,
+      C1: bn === 'Mastercard' ? '#241014' : bn === 'Amex' ? '#0d4a63' : bn === 'Elo' ? '#1a1a20' : '#12225e',
+      C2: bn === 'Mastercard' ? '#0a0406' : bn === 'Amex' ? '#03202c' : bn === 'Elo' ? '#050508' : '#060d2c',
+      Bank: pick(BANKS),
+      Holder: (pick(FIRST)[0] + '. ' + pick(LAST)).toUpperCase(),
+      Number: full,
+      Masked: full.slice(0, 6) + ' •••• •••• ' + full.slice(-4),
+      Exp: String(between(1, 12)).padStart(2, '0') + '/' + between(28, 32),
+      Cvv: String(between(100, 999)),
+      Limit: limit,
+      Price: step.price,
+      Score: Math.round(R() * 1000),
+      Sold: false
     });
   }
-  console.log(`[ESTOQUE] ${CARDS.size} itens de demonstracao gerados (REF_CODE_LENGTH=${REF_CODE_LENGTH})`);
+  Console.log(`[ESTOQUE] ${CARDS.size} itens limpios gerados no backend`);
 })();
 
 function publicCard(c) {
-  return {
-    id: c.id,
-    brand: c.brand,
-    tier: c.tier,
-    tc: c.tc,
-    bank: c.bank,
-    holder: c.holder,
-    masked: c.masked,
-    refCode: c.refCode,
-    trackingCode: c.trackingCode,
-    limit: c.limit,
-    price: c.price,
-    score: c.score
+  Return {
+    Id: c.id,
+    Brand: c.brand,
+    Tier: c.tier,
+    Tc: c.tc,
+    C1: c.c1,
+    C2: c.c2,
+    Bank: c.bank,
+    Holder: c.holder,
+    Masked: c.masked,
+    Exp: c.exp,
+    Limit: c.limit,
+    Price: c.price,
+    Score: c.score
   };
 }
 
 app.get('/api/catalog', (req, res) => {
-  const cards = [...CARDS.values()].filter((c) => !c.sold).map(publicCard);
-  res.json({ total: cards.length, cards });
+  Const cards = [...CARDS.values()].filter((c) => !c.sold).map(publicCard);
+  Res.json({ total: cards.length, cards });
 });
 
 /* =========================================================
-   PEDIDOS
+   PEDIDOS E CHECKOUT
    ========================================================= */
-const ORDERS = new Map(); // orderId -> pedido
-const ORDER_TTL = 20 * 60 * 1000; // 20 min
+const ORDERS = new Map();
+const ORDER_TTL = 20 * 60 * 1000;
 
 const PIX_KEYS = [
   'brcode', 'br_code', 'pix_copia_cola', 'copiaecola',
@@ -186,277 +196,267 @@ const PIX_KEYS = [
 const isEmv = (s) => typeof s === 'string' && (s.startsWith('000201') || s.includes('br.gov.bcb.pix'));
 
 function findEmv(obj) {
-  if (isEmv(obj)) return obj;
-  if (!obj || typeof obj !== 'object') return undefined;
-  for (const v of Object.values(obj)) {
-    const r = findEmv(v);
-    if (r) return r;
+  If (isEmv(obj)) return obj;
+  If (!obj || typeof obj !== 'object') return undefined;
+  For (const v of Object.values(obj)) {
+    Const r = findEmv(v);
+    If (r) return r;
   }
-  return undefined;
+  Return undefined;
 }
 
 function findField(obj, keys) {
-  if (!obj || typeof obj !== 'object') return undefined;
-  for (const [k, v] of Object.entries(obj)) {
-    if (keys.includes(k.toLowerCase()) && v !== undefined && v !== null && v !== '') {
-      return v;
+  If (!obj || typeof obj !== 'object') return undefined;
+  For (const [k, v] of Object.entries(obj)) {
+    If (keys.includes(k.toLowerCase()) && v !== undefined && v !== null && v !== '') {
+      Return v;
     }
   }
-  for (const v of Object.values(obj)) {
-    const r = findField(v, keys);
-    if (r) return r;
+  For (const v of Object.values(obj)) {
+    Const r = findField(v, keys);
+    If (r) return r;
   }
-  return undefined;
+  Return undefined;
 }
 
 function extrairCodigo(body) {
-  const direto = findEmv(body);
-  if (direto) return direto;
-  const bruto = findField(body, PIX_KEYS);
-  if (typeof bruto === 'string' && bruto.length > 20) return bruto;
-  if (bruto && typeof bruto === 'object') {
-    const interno = findEmv(bruto) || findField(bruto, PIX_KEYS);
-    if (typeof interno === 'string') return interno;
+  Const direto = findEmv(body);
+  If (direto) return direto;
+  Const bruto = findField(body, PIX_KEYS);
+  If (typeof bruto === 'string' && bruto.length > 20) return bruto;
+  If (bruto && typeof bruto === 'object') {
+    Const interno = findEmv(bruto) || findField(bruto, PIX_KEYS);
+    If (typeof interno === 'string') return interno;
   }
-  return null;
+  Return null;
 }
 
-// Rate limit simples por IP
 const HITS = new Map();
 
 function rateLimit(ip, max = 12, win = 60000) {
-  const now = Date.now();
-  const arr = (HITS.get(ip) || []).filter((t) => now - t < win);
-  if (arr.length >= max) return false;
-  arr.push(now);
+  Const now = Date.now();
+  Const arr = (HITS.get(ip) || []).filter((t) => now - t < win);
+  If (arr.length >= max) return false;
+  Arr.push(now);
   HITS.set(ip, arr);
-  return true;
+  Return true;
 }
 
 app.post('/api/checkout', async (req, res) => {
-  try {
-    const forwarded = req.headers['x-forwarded-for'];
-    const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') || req.ip || 'unknown';
-    if (!rateLimit(ip)) {
-      return res.status(429).json({ error: 'Muitas tentativas, aguarde 1 minuto' });
+  Try {
+    Const forwarded = req.headers['x-forwarded-for'];
+    Const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') || req.ip || 'unknown';
+    If (!rateLimit(ip)) {
+      Return res.status(429).json({ error: 'Muitas tentativas, aguarde 1 minuto' });
     }
-    if (!ATENAS_API_KEY) {
-      return res.status(500).json({ error: 'ATENASPAY_API_KEY nao configurada' });
-    }
-
-    const items = Array.isArray(req.body?.items) ? req.body.items : [];
-    if (!items.length) {
-      return res.status(422).json({ error: 'Carrinho vazio' });
-    }
-    if (items.length > 10) {
-      return res.status(422).json({ error: 'Maximo de 10 itens por pedido' });
+    If (!ATENAS_API_KEY) {
+      Return res.status(500).json({ error: 'ATENASPAY_API_KEY nao configurada' });
     }
 
-    // Resolve e valida itens no servidor
-    const linhas = [];
-    for (const it of items) {
-      if (!it || typeof it !== 'object' || !it.id) {
-        return res.status(422).json({ error: 'Item invalido no carrinho' });
+    Const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    If (!items.length) {
+      Return res.status(422).json({ error: 'Carrinho vazio' });
+    }
+    If (items.length > 10) {
+      Return res.status(422).json({ error: 'Maximo de 10 itens por pedido' });
+    }
+
+    Const linhas = [];
+    For (const it of items) {
+      If (!it || typeof it !== 'object' || !it.id) {
+        Return res.status(422).json({ error: 'Item invalido no carrinho' });
       }
-      const card = CARDS.get(String(it.id));
-      if (!card) {
-        return res.status(422).json({ error: `Item invalido: ${it.id}` });
+      Const card = CARDS.get(String(it.id));
+      If (!card) {
+        Return res.status(422).json({ error: `Item invalido: ${it.id}` });
       }
-      if (card.sold) {
-        return res.status(409).json({ error: `Item ${it.id} ja reservado/vendido` });
+      If (card.sold) {
+        Return res.status(409).json({ error: `Item ${it.id} ja reservado/vendido` });
       }
-      const qty = Math.min(Math.max(parseInt(it.qty, 10) || 1, 1), 5);
-      linhas.push({ card, qty });
+      Const qty = Math.min(Math.max(parseInt(it.qty, 10) || 1, 1), 5);
+      Linhas.push({ card, qty });
     }
 
-    // Preco sempre calculado no servidor, nunca recebido do cliente
-    const amount = Number(linhas.reduce((s, l) => s + l.card.price * l.qty, 0).toFixed(2));
-    const orderId = `ped_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
-    const trackingCode = `PED-${genRefCode(REF_CODE_LENGTH)}`;
+    Const amount = Number(linhas.reduce((s, l) => s + l.card.price * l.qty, 0).toFixed(2));
+    Const orderId = `ped_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    Const trackingCode = `PED-${genRefCode(6)}`;
 
-    console.log(`[PIX] criando ${orderId} | valor ${amount}`);
+    Console.log(`[PIX] criando ${orderId} | valor ${amount}`);
 
-    const response = await fetch(`${ATENAS_API_BASE}/api/pix/create`, {
-      method: 'POST',
-      headers: {
+    Const response = await fetch(`${ATENAS_API_BASE}/api/pix/create`, {
+      Method: 'POST',
+      Headers: {
         'x-api-key': ATENAS_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        amount,
-        description: `Pedido ${orderId} - ${linhas.length} item(ns)`.slice(0, 140),
-        external_id: orderId
+      Body: JSON.stringify({
+        Amount,
+        Description: `Pedido ${orderId} - ${linhas.length} item(ns)`.slice(0, 140),
+        External_id: orderId
       }),
-      signal: AbortSignal.timeout(15000)
+      Signal: AbortSignal.timeout(15000)
     });
 
-    const body = await response.json().catch(() => null);
-    if (!response.ok || !body) {
-      return res.status(502).json({
-        error: `Atenas Pay recusou (HTTP ${response.status})`,
-        detalhes: body
+    Const body = await response.json().catch(() => null);
+    If (!response.ok || !body) {
+      Return res.status(502).json({
+        Error: `Atenas Pay recusou (HTTP ${response.status})`,
+        Detalhes: body
       });
     }
 
-    const pixCode = extrairCodigo(body);
-    if (!pixCode) {
-      return res.status(502).json({
-        error: 'Resposta sem codigo Pix reconhecivel',
-        detalhes: body
+    Const pixCode = extrairCodigo(body);
+    If (!pixCode) {
+      Return res.status(502).json({
+        Error: 'Resposta sem codigo Pix reconhecivel',
+        Detalhes: body
       });
     }
 
-    const atenaId = findField(body, ['id', 'txid', 'transaction_id']) || orderId;
+    Const atenaId = findField(body, ['id', 'txid', 'transaction_id']) || orderId;
 
     ORDERS.set(orderId, {
-      id: orderId,
-      atenaId: String(atenaId),
-      trackingCode,
-      amount,
-      items: linhas.map((l) => ({ id: l.card.id, qty: l.qty, price: l.card.price })),
-      status: 'pendente',
-      createdAt: Date.now(),
-      paidAt: null,
-      lastCheck: 0
+      Id: orderId,
+      AtenaId: String(atenaId),
+      TrackingCode: trackingCode,
+      Amount,
+      Items: linhas.map((l) => ({ id: l.card.id, qty: l.qty, price: l.card.price })),
+      Status: 'pendente',
+      CreatedAt: Date.now(),
+      PaidAt: null,
+      LastCheck: 0
     });
 
-    res.json({
-      order_id: orderId,
-      tracking_code: trackingCode,
-      amount,
-      pix: pixCode,
-      expires_in: ORDER_TTL / 1000
+    Res.json({
+      Order_id: orderId,
+      Tracking_code: trackingCode,
+      Amount,
+      Pix: pixCode,
+      Expires_in: ORDER_TTL / 1000
     });
   } catch (err) {
-    console.error('[CHECKOUT]', err);
-    res.status(500).json({ error: 'Erro interno' });
+    Console.error('[CHECKOUT]', err);
+    Res.status(500).json({ error: 'Erro interno' });
   }
 });
 
 function entrega(order) {
-  return order.items.flatMap((it) => {
-    const c = CARDS.get(it.id);
-    if (!c) return [];
-    return [{
-      id: c.id,
-      brand: c.brand,
-      tier: c.tier,
-      bank: c.bank,
-      demoCode: c.demoCode,
-      refCode: c.refCode,
-      trackingCode: c.trackingCode,
-      holder: c.holder,
-      limit: c.limit,
-      qty: it.qty
+  Return order.items.flatMap((it) => {
+    Const c = CARDS.get(it.id);
+    If (!c) return [];
+    Return [{
+      Id: c.id,
+      Brand: c.brand,
+      Tier: c.tier,
+      Bank: c.bank,
+      Number: c.number,
+      Exp: c.exp,
+      Cvv: c.cvv,
+      Holder: c.holder,
+      Limit: c.limit,
+      Qty: it.qty
     }];
   });
 }
 
 function marcarPago(order, origem) {
-  if (order.status === 'pago') return;
-  order.status = 'pago';
-  order.paidAt = Date.now();
-  order.items.forEach((it) => {
-    const c = CARDS.get(it.id);
-    if (c) c.sold = true;
+  If (order.status === 'pago') return;
+  Order.status = 'pago';
+  Order.paidAt = Date.now();
+  Order.items.forEach((it) => {
+    Const c = CARDS.get(it.id);
+    If (c) c.sold = true;
   });
-  console.log(`[PAGO] ${order.id} via ${origem}`);
+  Console.log(`[PAGO] ${order.id} via ${origem}`);
 }
 
 app.get('/api/order/:id', async (req, res) => {
-  const order = ORDERS.get(req.params.id);
-  if (!order) {
-    return res.status(404).json({ error: 'Pedido nao encontrado' });
+  Const order = ORDERS.get(req.params.id);
+  If (!order) {
+    Return res.status(404).json({ error: 'Pedido nao encontrado' });
   }
 
-  if (order.status === 'pago') {
-    return res.json({ status: 'pago', tracking_code: order.trackingCode, cards: entrega(order) });
+  If (order.status === 'pago') {
+    Return res.json({ status: 'pago', tracking_code: order.trackingCode, cards: entrega(order) });
   }
 
-  if (Date.now() - order.createdAt > ORDER_TTL) {
-    order.status = 'expirado';
-    return res.json({ status: 'expirado', tracking_code: order.trackingCode });
+  If (Date.now() - order.createdAt > ORDER_TTL) {
+    Order.status = 'expirado';
+    Return res.json({ status: 'expirado', tracking_code: order.trackingCode });
   }
 
-  // Consulta ativa na Atenas (throttle 3s) - funciona mesmo sem webhook
-  if (ATENAS_API_KEY && Date.now() - order.lastCheck > 3000) {
-    order.lastCheck = Date.now();
-    try {
-      const r = await fetch(`${ATENAS_API_BASE}/api/pix/${encodeURIComponent(order.atenaId)}`, {
-        headers: { 'x-api-key': ATENAS_API_KEY },
-        signal: AbortSignal.timeout(10000)
+  If (ATENAS_API_KEY && Date.now() - order.lastCheck > 3000) {
+    Order.lastCheck = Date.now();
+    Try {
+      Const r = await fetch(`${ATENAS_API_BASE}/api/pix/${encodeURIComponent(order.atenaId)}`, {
+        Headers: { 'x-api-key': ATENAS_API_KEY },
+        Signal: AbortSignal.timeout(10000)
       });
-      const b = await r.json().catch(() => null);
-      const raw = String(findField(b, ['status']) || '').toLowerCase();
-      if (['paid', 'confirmed', 'approved', 'completed', 'concluida', 'pago', 'success'].includes(raw)) {
-        marcarPago(order, 'polling');
+      Const b = await r.json().catch(() => null);
+      Const raw = String(findField(b, ['status']) || '').toLowerCase();
+      If (['paid', 'confirmed', 'approved', 'completed', 'concluida', 'pago', 'success'].includes(raw)) {
+        MarcarPago(order, 'polling');
       }
     } catch (e) {
-      /* silencioso para manter polling resiliente */
+      /* silencioso */
     }
   }
 
-  if (order.status === 'pago') {
-    return res.json({ status: 'pago', tracking_code: order.trackingCode, cards: entrega(order) });
+  If (order.status === 'pago') {
+    Return res.json({ status: 'pago', tracking_code: order.trackingCode, cards: entrega(order) });
   }
 
-  res.json({ status: 'pendente', tracking_code: order.trackingCode });
+  Res.json({ status: 'pendente', tracking_code: order.trackingCode });
 });
 
-/* =========================================================
-   WEBHOOK (opcional, deixa a confirmacao instantanea)
-   ========================================================= */
 app.post('/api/webhook/atena', (req, res) => {
-  res.sendStatus(200); // Responde rapido para o provedor nao reenviar
-  try {
-    const body = req.body || {};
-    const raw = String(findField(body, ['status', 'situacao']) || '').toLowerCase();
-    const pago = ['paid', 'confirmed', 'approved', 'completed', 'pago', 'concluida', 'success'].includes(raw);
-    if (!pago) return;
+  Res.sendStatus(200);
+  Try {
+    Const body = req.body || {};
+    Const raw = String(findField(body, ['status', 'situacao']) || '').toLowerCase();
+    Const pago = ['paid', 'confirmed', 'approved', 'completed', 'pago', 'concluida', 'success'].includes(raw);
+    If (!pago) return;
 
-    const ref = findField(body, ['external_id', 'externalid', 'reference', 'referencia'])
+    Const ref = findField(body, ['external_id', 'externalid', 'reference', 'referencia'])
       || findField(body, ['id', 'txid', 'transaction_id']);
 
-    if (!ref) return;
+    If (!ref) return;
 
-    let order = ORDERS.get(String(ref));
-    if (!order) {
-      order = [...ORDERS.values()].find((o) => o.atenaId === String(ref));
+    Let order = ORDERS.get(String(ref));
+    If (!order) {
+      Order = [...ORDERS.values()].find((o) => o.atenaId === String(ref));
     }
-    if (order) {
-      marcarPago(order, 'webhook');
+    If (order) {
+      MarcarPago(order, 'webhook');
     }
   } catch (e) {
-    console.error('[WEBHOOK]', e.message);
+    Console.error('[WEBHOOK]', e.message);
   }
 });
 
 app.get('/health', (req, res) => {
-  res.json({
-    ok: true,
-    estoque: [...CARDS.values()].filter((c) => !c.sold).length,
-    ref_code_length: REF_CODE_LENGTH
+  Res.json({
+    Ok: true,
+    Estoque: [...CARDS.values()].filter((c) => !c.sold).length
   });
 });
 
-// Tratamento de rotas inexistentes e erros JSON
 app.use((req, res) => {
-  res.status(404).json({ error: 'Rota nao encontrada' });
+  Res.status(404).json({ error: 'Rota nao encontrada' });
 });
 
 app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-    return res.status(400).json({ error: 'JSON invalido no corpo da requisicao' });
+  If (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    Return res.status(400).json({ error: 'JSON invalido no corpo da requisicao' });
   }
-  console.error('[ERRO]', err);
-  return res.status(500).json({ error: 'Erro interno do servidor' });
+  Console.error('[ERRO]', err);
+  Return res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-// Limpeza periodica de pedidos nao pagos expirados
-const cleanupTimer = setInterval(() => {
-  const now = Date.now();
-  for (const [id, o] of ORDERS) {
-    if (o.status !== 'pago' && now - o.createdAt > ORDER_TTL * 2) {
+Const cleanupTimer = setInterval(() => {
+  Const now = Date.now();
+  For (const [id, o] of ORDERS) {
+    If (o.status !== 'pago' && now - o.createdAt > ORDER_TTL * 2) {
       ORDERS.delete(id);
     }
   }
@@ -465,5 +465,5 @@ cleanupTimer.unref();
 
 const PORT = Number(process.env.PORT) || 3000;
 app.listen(PORT, () => {
-  console.log(`Backend na porta ${PORT}`);
+  Console.log(`Backend na porta ${PORT}`);
 });
