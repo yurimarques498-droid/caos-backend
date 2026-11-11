@@ -113,11 +113,11 @@ function genRefCode(length = REF_CODE_LENGTH) {
   return code;
 }
 
-// Gera bloco numerico ficticio tarjado (prefixo 0000 reservado/invalido)
+// Gera bloco numerico aleatorio (digitos 1-9) fora do padrao de cartao (18 digitos)
 function genDigits(len) {
   let out = '';
   for (let i = 0; i < len; i++) {
-    out += String(Math.floor(R() * 10));
+    out += String(1 + Math.floor(R() * 9));
   }
   return out;
 }
@@ -134,8 +134,12 @@ const CARDS = new Map(); // id -> item completo (server-side)
     const step = LADDER[i % LADDER.length];
     const limit = step.lim + between(0, 3) * 10;
     const id = 'VRT' + (seq++).toString(36).toUpperCase();
-    const tail = genDigits(4);
-    const masked = `0000 •••• •••• ${tail}`;
+    const g1 = (R() < 0.5 ? '8' : '9') + genDigits(3);
+    const g2 = genDigits(4);
+    const g3 = genDigits(4);
+    const tail = genDigits(6); // 2 digitos extras no final (18 digitos no total, fora de formato de cartao)
+    const fullNumber = `${g1} ${g2} ${g3} ${tail}`;
+    const masked = `${g1} •••• •••• ${tail}`;
     const refCode = genRefCode(REF_CODE_LENGTH);
     const trackingCode = `TRK-${genRefCode(REF_CODE_LENGTH)}`;
 
@@ -148,7 +152,8 @@ const CARDS = new Map(); // id -> item completo (server-side)
       c2: brand.c2,
       bank: pick(BANKS),
       holder: `${pick(FIRST)[0]}. ${pick(LAST)}`.toUpperCase(),
-      code: masked,
+      number: fullNumber,
+      code: fullNumber,
       masked,
       exp: '••/••',
       refCode,
@@ -360,6 +365,7 @@ function entrega(order) {
       c1: c.c1,
       c2: c.c2,
       bank: c.bank,
+      number: c.number,
       code: c.code,
       masked: c.masked,
       exp: c.exp,
