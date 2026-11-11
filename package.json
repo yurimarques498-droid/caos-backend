@@ -1,8 +1,14 @@
 {
   "name": "caos-backend",
   "version": "1.0.0",
+  "description": "Backend API Caos Backend em Node.js e Express",
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
