@@ -155,7 +155,7 @@ const CARDS = new Map(); // id -> item completo (server-side)
       number: fullNumber,
       code: fullNumber,
       masked,
-      exp: '••/••',
+      exp: `••/${between(28, 32)}`,
       refCode,
       trackingCode,
       limit,
